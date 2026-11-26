@@ -1,6 +1,9 @@
 {
   "domain": "skycrophd_hdmi_switch_infrared",
   "name": "SkycropHD HDMI Switch Infrared",
+  "categories": [
+    "media_entertainment.tv_streaming"
+  ],
   "codeowners": [
     "@hlgirard"
   ],
