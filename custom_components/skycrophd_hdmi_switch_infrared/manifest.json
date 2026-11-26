@@ -1,0 +1,13 @@
+{
+  "domain": "skycrophd_hdmi_switch_infrared",
+  "name": "SkycropHD HDMI Switch Infrared",
+  "codeowners": ["@hlgirard"],
+  "config_flow": true,
+  "dependencies": ["infrared"],
+  "documentation": "https://github.com/hlgirard/hacs-skycrophd-hdmi-switch",
+  "integration_type": "device",
+  "iot_class": "assumed_state",
+  "issue_tracker": "https://github.com/hlgirard/hacs-skycrophd-hdmi-switch/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

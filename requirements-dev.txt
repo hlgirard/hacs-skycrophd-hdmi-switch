@@ -1,0 +1,11 @@
+# Development dependencies for the Home Assistant test suite.
+#
+#   uv venv --python 3.14 .venv
+#   uv pip install --python .venv/bin/python -r requirements-dev.txt
+#
+# This package pins homeassistant exactly. Keep it as close as possible to the
+# version running in your Home Assistant instance.
+#
+# Current pin: homeassistant 2026.10.4 (latest available; instance runs 2026.11.3)
+pytest-homeassistant-custom-component==0.13.375
+infrared-protocols==10.1.0  # matches homeassistant/components/infrared/manifest.json

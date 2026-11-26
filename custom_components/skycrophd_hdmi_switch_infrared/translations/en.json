@@ -1,0 +1,74 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "A SkycropHD HDMI switch has already been configured with this infrared emitter.",
+      "no_infrared_emitters": "No infrared emitters were found. Set up an integration that provides an infrared emitter first."
+    },
+    "step": {
+      "user": {
+        "data": {
+          "infrared_entity_id": "Infrared emitter",
+          "infrared_receiver_entity_id": "Infrared receiver"
+        },
+        "data_description": {
+          "infrared_entity_id": "The infrared emitter used to send commands to the HDMI switch.",
+          "infrared_receiver_entity_id": "Optional. Keeps the state up to date when the HDMI switch's own remote is used."
+        },
+        "description": "Select the infrared emitter that controls your SkycropHD HDMI switch. Optionally select a receiver to follow commands sent by the switch's own remote.",
+        "title": "Set up SkycropHD HDMI switch"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "arc": {
+        "name": "ARC"
+      },
+      "input_down": {
+        "name": "Input down"
+      },
+      "input_up": {
+        "name": "Input up"
+      }
+    },
+    "switch": {
+      "auto_switching": {
+        "name": "Auto switching"
+      }
+    }
+  },
+  "exceptions": {
+    "emitter_not_found": {
+      "message": "The infrared emitter used by this HDMI switch no longer exists. Remove this device and set it up again with another emitter."
+    },
+    "invalid_source": {
+      "message": "Cannot select input {invalid_source}. Valid inputs: {valid_sources}."
+    },
+    "receiver_not_found": {
+      "message": "The infrared receiver used by this HDMI switch no longer exists. Remove this device and set it up again with another receiver."
+    }
+  },
+  "options": {
+    "error": {
+      "duplicate_source_name": "Each input needs a different name.",
+      "empty_source_name": "Input names cannot be empty."
+    },
+    "step": {
+      "init": {
+        "data": {
+          "power_on_delay": "Power-on delay",
+          "source_1": "Input 1 name",
+          "source_2": "Input 2 name",
+          "source_3": "Input 3 name",
+          "source_4": "Input 4 name",
+          "source_5": "Input 5 name"
+        },
+        "data_description": {
+          "power_on_delay": "How long to wait after turning the switch on before sending an input key, when an input is selected while the switch is off."
+        },
+        "description": "Name each HDMI input as it should appear in the source list.",
+        "title": "Options"
+      }
+    }
+  }
+}
