@@ -10,6 +10,7 @@ from custom_components.skycrophd_hdmi_switch_infrared.const import (
 )
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import issue_registry as ir
 
 from .conftest import EMITTER_ENTITY_ID, MEDIA_PLAYER_ENTITY_ID
 
@@ -30,24 +31,49 @@ async def test_setup_and_unload(
 
 @pytest.mark.usefixtures("infrared_entities")
 @pytest.mark.parametrize(
-    "data",
+    ("data", "kind"),
     [
-        pytest.param({CONF_INFRARED_ENTITY_ID: "infrared.missing"}, id="emitter"),
+        pytest.param(
+            {CONF_INFRARED_ENTITY_ID: "infrared.missing"}, "emitter", id="emitter"
+        ),
         pytest.param(
             {
                 CONF_INFRARED_ENTITY_ID: EMITTER_ENTITY_ID,
                 CONF_INFRARED_RECEIVER_ENTITY_ID: "infrared.missing",
             },
+            "receiver",
             id="receiver",
         ),
     ],
 )
 async def test_missing_infrared_entity(
-    hass: HomeAssistant, data: dict[str, str]
+    hass: HomeAssistant, data: dict[str, str], kind: str
 ) -> None:
-    """Setup fails when a configured infrared entity no longer exists."""
-    entry = MockConfigEntry(domain=DOMAIN, data=data)
+    """A missing infrared entity fails setup and raises a repair issue.
+
+    Fixing the entry and reloading it, as Reconfigure does, clears the issue.
+    """
+    entry = MockConfigEntry(domain=DOMAIN, data=data, title="HDMI switch")
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     assert entry.state is ConfigEntryState.SETUP_ERROR
+
+    issue_registry = ir.async_get(hass)
+    issue_id = f"{kind}_not_found_{entry.entry_id}"
+    issue = issue_registry.async_get_issue(DOMAIN, issue_id)
+    assert issue is not None
+    assert issue.translation_key == f"{kind}_not_found"
+    assert issue.translation_placeholders == {
+        "entity_id": "infrared.missing",
+        "title": "HDMI switch",
+    }
+    assert issue.is_fixable is False
+
+    hass.config_entries.async_update_entry(
+        entry, data={CONF_INFRARED_ENTITY_ID: EMITTER_ENTITY_ID}
+    )
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.LOADED
+    assert issue_registry.async_get_issue(DOMAIN, issue_id) is None

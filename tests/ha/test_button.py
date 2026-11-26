@@ -63,6 +63,5 @@ async def test_press(
     await press(hass, entity_id)
     await hass.async_block_till_done()
 
-    sent = mock_emitter.sent_commands[-1]
-    assert (sent.address, sent.command) == (SKYCROPHD_HDMI_SWITCH_ADDRESS, code)  # type: ignore[attr-defined]
+    assert mock_emitter.sent_codes[-1] == (SKYCROPHD_HDMI_SWITCH_ADDRESS, code)
     assert media_player_source(hass) == (None if clears_source else "HDMI 1")

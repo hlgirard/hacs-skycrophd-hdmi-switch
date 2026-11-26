@@ -9,3 +9,6 @@
 # Current pin: homeassistant 2026.10.4 (latest available; instance runs 2026.11.3)
 pytest-homeassistant-custom-component==0.13.375
 infrared-protocols==10.1.0  # matches homeassistant/components/infrared/manifest.json
+pytest-cov==7.1.0
+mypy==2.4.1
+ruff==0.17.6

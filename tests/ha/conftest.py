@@ -4,6 +4,7 @@ from collections.abc import Generator
 from typing import override
 
 from infrared_protocols.commands import Command
+from infrared_protocols.commands.nec import NECCommand
 import pytest
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
@@ -27,6 +28,7 @@ from homeassistant.setup import async_setup_component
 
 EMITTER_ENTITY_ID = "infrared.test_emitter"
 RECEIVER_ENTITY_ID = "infrared.test_receiver"
+OTHER_EMITTER_ENTITY_ID = "infrared.other_emitter"
 ENTRY_ID = "01JTEST0000000000000000000"
 MEDIA_PLAYER_ENTITY_ID = "media_player.skycrophd_hdmi_switch"
 
@@ -34,18 +36,26 @@ MEDIA_PLAYER_ENTITY_ID = "media_player.skycrophd_hdmi_switch"
 class MockInfraredEmitterEntity(InfraredEmitterEntity):
     """Infrared emitter that records the commands it sends."""
 
-    _attr_name = "Test emitter"
-
-    def __init__(self) -> None:
+    def __init__(self, entity_id: str = EMITTER_ENTITY_ID) -> None:
         """Initialize the emitter."""
-        self.entity_id = EMITTER_ENTITY_ID
-        self._attr_unique_id = "test_emitter"
+        self.entity_id = entity_id
+        self._attr_name = entity_id.removeprefix("infrared.")
+        self._attr_unique_id = entity_id
         self.sent_commands: list[Command] = []
 
     @override
     async def async_send_command(self, command: Command) -> None:
         """Record the command."""
         self.sent_commands.append(command)
+
+    @property
+    def sent_codes(self) -> list[tuple[int, int]]:
+        """Return (address, command) of each NEC command sent."""
+        codes = []
+        for command in self.sent_commands:
+            assert isinstance(command, NECCommand)
+            codes.append((command.address, command.command))
+        return codes
 
 
 class MockInfraredReceiverEntity(InfraredReceiverEntity):
@@ -84,13 +94,22 @@ def mock_receiver() -> MockInfraredReceiverEntity:
 
 
 @pytest.fixture
+def other_emitter() -> MockInfraredEmitterEntity:
+    """Return a second mock emitter entity."""
+    return MockInfraredEmitterEntity(OTHER_EMITTER_ENTITY_ID)
+
+
+@pytest.fixture
 async def infrared_entities(
     hass: HomeAssistant,
     mock_emitter: MockInfraredEmitterEntity,
+    other_emitter: MockInfraredEmitterEntity,
     mock_receiver: MockInfraredReceiverEntity,
 ) -> None:
-    """Set up the infrared domain with a mock emitter and receiver."""
-    setup_test_component_platform(hass, INFRARED_DOMAIN, [mock_emitter, mock_receiver])
+    """Set up the infrared domain with two mock emitters and a receiver."""
+    setup_test_component_platform(
+        hass, INFRARED_DOMAIN, [mock_emitter, other_emitter, mock_receiver]
+    )
     assert await async_setup_component(
         hass, INFRARED_DOMAIN, {INFRARED_DOMAIN: {"platform": "test"}}
     )

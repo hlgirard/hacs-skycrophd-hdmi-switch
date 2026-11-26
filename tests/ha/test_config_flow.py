@@ -9,11 +9,15 @@ from custom_components.skycrophd_hdmi_switch_infrared.const import (
     DEVICE_NAME,
     DOMAIN,
 )
-from homeassistant.config_entries import SOURCE_USER
+from homeassistant.config_entries import (
+    SOURCE_USER,
+    ConfigEntryState,
+    ConfigFlowResult,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
-from .conftest import EMITTER_ENTITY_ID, RECEIVER_ENTITY_ID
+from .conftest import EMITTER_ENTITY_ID, OTHER_EMITTER_ENTITY_ID, RECEIVER_ENTITY_ID
 
 SOURCE_NAMES = {
     "source_1": "Chromecast",
@@ -120,3 +124,76 @@ async def test_options_flow_invalid(
     )
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": error}
+
+
+async def start_reconfigure(
+    hass: HomeAssistant, entry: MockConfigEntry
+) -> ConfigFlowResult:
+    """Start the reconfigure flow of an entry."""
+    result = await entry.start_reconfigure_flow(hass)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+    return result
+
+
+@pytest.mark.parametrize(
+    ("has_receiver", "user_input"),
+    [
+        pytest.param(
+            False,
+            {
+                CONF_INFRARED_ENTITY_ID: OTHER_EMITTER_ENTITY_ID,
+                CONF_INFRARED_RECEIVER_ENTITY_ID: RECEIVER_ENTITY_ID,
+            },
+            id="change_emitter_add_receiver",
+        ),
+        pytest.param(
+            True,
+            {CONF_INFRARED_ENTITY_ID: EMITTER_ENTITY_ID},
+            id="remove_receiver",
+        ),
+    ],
+)
+async def test_reconfigure(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    user_input: dict[str, str],
+) -> None:
+    """Reconfigure replaces the infrared entities and reloads the entry."""
+    result = await start_reconfigure(hass, init_integration)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert dict(init_integration.data) == user_input
+    assert init_integration.state is ConfigEntryState.LOADED
+
+
+async def test_reconfigure_emitter_in_use(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """An emitter already used by another HDMI switch entry is refused."""
+    MockConfigEntry(
+        domain=DOMAIN, data={CONF_INFRARED_ENTITY_ID: OTHER_EMITTER_ENTITY_ID}
+    ).add_to_hass(hass)
+
+    result = await start_reconfigure(hass, init_integration)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_INFRARED_ENTITY_ID: OTHER_EMITTER_ENTITY_ID}
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    assert init_integration.data[CONF_INFRARED_ENTITY_ID] == EMITTER_ENTITY_ID
+
+
+async def test_reconfigure_no_emitters(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    """Reconfigure aborts when there is no infrared emitter at all."""
+    mock_config_entry.add_to_hass(hass)
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "no_infrared_emitters"

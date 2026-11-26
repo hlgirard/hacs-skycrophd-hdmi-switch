@@ -15,7 +15,7 @@ from homeassistant.config_entries import (
     OptionsFlowWithReload,
 )
 from homeassistant.const import UnitOfTime
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.selector import (
     EntitySelector,
     EntitySelectorConfig,
@@ -60,6 +60,26 @@ OPTIONS_SCHEMA = probatio.Schema(
 )
 
 
+def _infrared_schema(hass: HomeAssistant) -> probatio.Schema:
+    """Return the emitter and optional receiver selection schema."""
+    return probatio.Schema(
+        {
+            probatio.Required(CONF_INFRARED_ENTITY_ID): EntitySelector(
+                EntitySelectorConfig(
+                    domain=INFRARED_DOMAIN,
+                    include_entities=async_get_emitters(hass),
+                )
+            ),
+            probatio.Optional(CONF_INFRARED_RECEIVER_ENTITY_ID): EntitySelector(
+                EntitySelectorConfig(
+                    domain=INFRARED_DOMAIN,
+                    include_entities=async_get_receivers(hass),
+                )
+            ),
+        }
+    )
+
+
 class SkycropHDConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle config flow for SkycropHD HDMI Switch Infrared."""
 
@@ -70,7 +90,7 @@ class SkycropHDConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle emitter and optional receiver selection."""
-        if not (emitter_entity_ids := async_get_emitters(self.hass)):
+        if not async_get_emitters(self.hass):
             return self.async_abort(reason="no_infrared_emitters")
 
         if user_input is not None:
@@ -80,22 +100,32 @@ class SkycropHDConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(title=DEVICE_NAME, data=user_input)
 
         return self.async_show_form(
-            step_id="user",
-            data_schema=probatio.Schema(
-                {
-                    probatio.Required(CONF_INFRARED_ENTITY_ID): EntitySelector(
-                        EntitySelectorConfig(
-                            domain=INFRARED_DOMAIN,
-                            include_entities=emitter_entity_ids,
-                        )
-                    ),
-                    probatio.Optional(CONF_INFRARED_RECEIVER_ENTITY_ID): EntitySelector(
-                        EntitySelectorConfig(
-                            domain=INFRARED_DOMAIN,
-                            include_entities=async_get_receivers(self.hass),
-                        )
-                    ),
-                }
+            step_id="user", data_schema=_infrared_schema(self.hass)
+        )
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Change the emitter or receiver of an existing HDMI switch."""
+        if not async_get_emitters(self.hass):
+            return self.async_abort(reason="no_infrared_emitters")
+
+        entry = self._get_reconfigure_entry()
+        if user_input is not None:
+            emitter_entity_id = user_input[CONF_INFRARED_ENTITY_ID]
+            if any(
+                other.entry_id != entry.entry_id
+                and other.data.get(CONF_INFRARED_ENTITY_ID) == emitter_entity_id
+                for other in self._async_current_entries(include_ignore=False)
+            ):
+                return self.async_abort(reason="already_configured")
+            # Replace the data so a cleared receiver is removed.
+            return self.async_update_reload_and_abort(entry, data=user_input)
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                _infrared_schema(self.hass), entry.data
             ),
         )
 

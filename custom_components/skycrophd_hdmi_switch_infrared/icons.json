@@ -1,0 +1,23 @@
+{
+  "entity": {
+    "button": {
+      "arc": {
+        "default": "mdi:surround-sound"
+      },
+      "input_down": {
+        "default": "mdi:arrow-down-bold"
+      },
+      "input_up": {
+        "default": "mdi:arrow-up-bold"
+      }
+    },
+    "switch": {
+      "auto_switching": {
+        "default": "mdi:auto-mode",
+        "state": {
+          "off": "mdi:hand-back-right"
+        }
+      }
+    }
+  }
+}

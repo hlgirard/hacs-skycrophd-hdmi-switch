@@ -11,9 +11,9 @@ from homeassistant.components.infrared import (
     InfraredReceivedSignal,
     InfraredReceiverConsumerEntity,
 )
-from homeassistant.components.media_player import (
+from homeassistant.components.media_player import MediaPlayerEntity
+from homeassistant.components.media_player.const import (
     MediaPlayerDeviceClass,
-    MediaPlayerEntity,
     MediaPlayerEntityFeature,
     MediaPlayerState,
 )

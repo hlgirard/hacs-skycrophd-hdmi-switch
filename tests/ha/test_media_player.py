@@ -45,7 +45,7 @@ NAMED_OPTIONS = {
 
 def sent_codes(emitter: MockInfraredEmitterEntity) -> list[tuple[int, int]]:
     """Return (address, command) of each command the emitter sent."""
-    return [(c.address, c.command) for c in emitter.sent_commands]  # type: ignore[attr-defined]
+    return emitter.sent_codes
 
 
 def remote_press(

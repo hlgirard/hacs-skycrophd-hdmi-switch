@@ -2,9 +2,22 @@
   "config": {
     "abort": {
       "already_configured": "A SkycropHD HDMI switch has already been configured with this infrared emitter.",
-      "no_infrared_emitters": "No infrared emitters were found. Set up an integration that provides an infrared emitter first."
+      "no_infrared_emitters": "No infrared emitters were found. Set up an integration that provides an infrared emitter first.",
+      "reconfigure_successful": "The HDMI switch was reconfigured."
     },
     "step": {
+      "reconfigure": {
+        "data": {
+          "infrared_entity_id": "Infrared emitter",
+          "infrared_receiver_entity_id": "Infrared receiver"
+        },
+        "data_description": {
+          "infrared_entity_id": "The infrared emitter used to send commands to the HDMI switch.",
+          "infrared_receiver_entity_id": "Optional. Keeps the state up to date when the HDMI switch's own remote is used."
+        },
+        "description": "Change the infrared emitter or receiver used by this HDMI switch. Leave the receiver empty to stop following the switch's own remote.",
+        "title": "Reconfigure SkycropHD HDMI switch"
+      },
       "user": {
         "data": {
           "infrared_entity_id": "Infrared emitter",
@@ -39,13 +52,23 @@
   },
   "exceptions": {
     "emitter_not_found": {
-      "message": "The infrared emitter used by this HDMI switch no longer exists. Remove this device and set it up again with another emitter."
+      "message": "The infrared emitter {entity_id} used by {title} no longer exists. Reconfigure the integration to select another emitter."
     },
     "invalid_source": {
       "message": "Cannot select input {invalid_source}. Valid inputs: {valid_sources}."
     },
     "receiver_not_found": {
-      "message": "The infrared receiver used by this HDMI switch no longer exists. Remove this device and set it up again with another receiver."
+      "message": "The infrared receiver {entity_id} used by {title} no longer exists. Reconfigure the integration to select another receiver, or none."
+    }
+  },
+  "issues": {
+    "emitter_not_found": {
+      "description": "The infrared emitter {entity_id} used by {title} no longer exists, so the HDMI switch cannot be controlled.\n\nGo to **Settings → Devices & services → SkycropHD HDMI Switch Infrared**, open the entry's menu and choose **Reconfigure** to select another emitter.",
+      "title": "Infrared emitter of {title} is missing"
+    },
+    "receiver_not_found": {
+      "description": "The infrared receiver {entity_id} used by {title} no longer exists.\n\nGo to **Settings → Devices & services → SkycropHD HDMI Switch Infrared**, open the entry's menu and choose **Reconfigure** to select another receiver, or leave it empty.",
+      "title": "Infrared receiver of {title} is missing"
     }
   },
   "options": {
@@ -64,7 +87,12 @@
           "source_5": "Input 5 name"
         },
         "data_description": {
-          "power_on_delay": "How long to wait after turning the switch on before sending an input key, when an input is selected while the switch is off."
+          "power_on_delay": "How long to wait after turning the switch on before sending an input key, when an input is selected while the switch is off.",
+          "source_1": "Name of HDMI input 1, as shown in the media player's source list.",
+          "source_2": "Name of HDMI input 2, as shown in the media player's source list.",
+          "source_3": "Name of HDMI input 3, as shown in the media player's source list.",
+          "source_4": "Name of HDMI input 4, as shown in the media player's source list.",
+          "source_5": "Name of HDMI input 5, as shown in the media player's source list."
         },
         "description": "Name each HDMI input as it should appear in the source list.",
         "title": "Options"

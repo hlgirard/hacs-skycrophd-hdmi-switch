@@ -7,7 +7,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryError
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import entity_registry as er, issue_registry as ir
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.util import dt as dt_util
 
@@ -60,6 +60,12 @@ class SkycropHDRuntimeData:
         """Remember a code that is about to be sent, so its echo can be ignored."""
         self._expected_echoes.append((code, dt_util.utcnow() + ECHO_WINDOW))
 
+    @property
+    def pending_echo_count(self) -> int:
+        """Return how many sent codes still wait for their echo."""
+        now = dt_util.utcnow()
+        return sum(1 for _, deadline in self._expected_echoes if deadline > now)
+
     @callback
     def consume_echo(self, code: SkycropHDHdmiSwitchCode) -> bool:
         """Return whether a received code is the echo of one just sent.
@@ -91,23 +97,42 @@ class SkycropHDRuntimeData:
 type SkycropHDConfigEntry = ConfigEntry[SkycropHDRuntimeData]
 
 
+def _issue_id(kind: str, entry: SkycropHDConfigEntry) -> str:
+    """Return the repair issue ID for a missing infrared entity of an entry."""
+    return f"{kind}_not_found_{entry.entry_id}"
+
+
+@callback
+def _infrared_entity_exists(hass: HomeAssistant, entity_id: str, kind: str) -> bool:
+    """Return whether an emitter or receiver entity is still known."""
+    known = async_get_emitters(hass) if kind == "emitter" else async_get_receivers(hass)
+    return er.async_get(hass).async_get(entity_id) is not None or entity_id in known
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: SkycropHDConfigEntry) -> bool:
     """Set up SkycropHD HDMI Switch Infrared from a config entry."""
-    entity_registry = er.async_get(hass)
-    emitter_entity_id = entry.data[CONF_INFRARED_ENTITY_ID]
-    if entity_registry.async_get(
-        emitter_entity_id
-    ) is None and emitter_entity_id not in async_get_emitters(hass):
-        raise ConfigEntryError(
-            translation_domain=DOMAIN, translation_key="emitter_not_found"
-        )
-    if (
-        (receiver_entity_id := entry.data.get(CONF_INFRARED_RECEIVER_ENTITY_ID))
-        and entity_registry.async_get(receiver_entity_id) is None
-        and receiver_entity_id not in async_get_receivers(hass)
+    for kind, conf_key in (
+        ("emitter", CONF_INFRARED_ENTITY_ID),
+        ("receiver", CONF_INFRARED_RECEIVER_ENTITY_ID),
     ):
+        entity_id: str | None = entry.data.get(conf_key)
+        if entity_id is None or _infrared_entity_exists(hass, entity_id, kind):
+            ir.async_delete_issue(hass, DOMAIN, _issue_id(kind, entry))
+            continue
+        placeholders = {"entity_id": entity_id, "title": entry.title}
+        ir.async_create_issue(
+            hass,
+            DOMAIN,
+            _issue_id(kind, entry),
+            is_fixable=False,
+            severity=ir.IssueSeverity.ERROR,
+            translation_key=f"{kind}_not_found",
+            translation_placeholders=placeholders,
+        )
         raise ConfigEntryError(
-            translation_domain=DOMAIN, translation_key="receiver_not_found"
+            translation_domain=DOMAIN,
+            translation_key=f"{kind}_not_found",
+            translation_placeholders=placeholders,
         )
 
     entry.runtime_data = SkycropHDRuntimeData(

@@ -73,7 +73,7 @@ async def test_toggle(
     await set_auto(hass, SERVICE_TURN_OFF)
     assert auto_state(hass) == STATE_OFF
 
-    assert [c.command for c in mock_emitter.sent_commands] == [  # type: ignore[attr-defined]
+    assert [command for _, command in mock_emitter.sent_codes] == [
         SkycropHDHdmiSwitchCode.AUTO,
         SkycropHDHdmiSwitchCode.AUTO,
     ]
