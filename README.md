@@ -2,8 +2,7 @@
 
 Home Assistant integration that controls a SkycropHD 5-in/1-out HDMI switch
 (with ARC) over infrared. It sends commands through any Home Assistant
-`infrared` emitter entity, for example an ESPHome IR proxy. It is modeled on
-the core `benq_projector_infrared` integration.
+`infrared` emitter entity, for example an ESPHome IR proxy.
 
 The switch cannot report its state, so the integration assumes it from the
 commands it sends. If you also select an infrared **receiver**, presses on the
@@ -67,7 +66,7 @@ Choose **Configure** on the entry.
 
 | Option | Default | Notes |
 | --- | --- | --- |
-| Input 1 – 5 name | `HDMI 1` … `HDMI 5` | Names in the media player's source list, e.g. *Chromecast*, *Kodi*. They must be unique and not empty. Renaming an input keeps it selected. |
+| Input 1 – 5 name | `HDMI 1` … `HDMI 5` | Names in the media player's source list. They must be unique and not empty. Renaming an input keeps it selected. |
 | Power-on delay | 2 s (0–30) | Wait after Power on before sending an input key, when an input is selected while the switch is off. |
 
 ## Examples
@@ -79,7 +78,7 @@ fields:
   hdmi_input:
     selector:
       select:
-        options: [Chromecast, Kodi, Nintendo Switch, HDMI cable]
+        options: [Chromecast, Nintendo Switch, HDMI cable]
     default: Chromecast
 sequence:
   - action: media_player.select_source
@@ -88,31 +87,6 @@ sequence:
     data:
       source: "{{ hdmi_input }}"
 ```
-
-Map a spare remote's buttons to inputs and to cycling:
-
-```yaml
-actions:
-  - choose:
-      - conditions: [{condition: trigger, id: dim-up-pressed}]
-        sequence:
-          - action: media_player.select_source
-            target: {entity_id: media_player.living_room_skycrophd_hdmi_switch}
-            data: {source: Chromecast}
-      - conditions: [{condition: trigger, id: left-arrow-pressed}]
-        sequence:
-          - action: button.press
-            target: {entity_id: button.living_room_skycrophd_hdmi_switch_input_up}
-```
-
-### Use cases
-
-- One "Media on" script that powers up the projector or TV and picks the right
-  input for what you want to watch.
-- Dashboard tiles per input (Chromecast, Kodi, console) instead of the
-  switch's remote.
-- Keeping the input in Home Assistant correct even when someone uses the
-  physical remote, with a receiver.
 
 ## Known limitations
 
@@ -132,11 +106,6 @@ actions:
   Input keys don't leave auto mode, so while it is on, the media player's
   input is always unknown. The last input you selected shows again once auto
   mode is turned off.
-- **The receiver hears the integration's own transmissions.** An IR proxy's
-  receiver usually sits next to its emitter and hears each sent code back
-  about 150–200 ms later. For 1 second after sending a code, the integration
-  ignores one received copy of it. A second press of the same key on the
-  physical remote within that second still counts.
 
 ## Troubleshooting
 
